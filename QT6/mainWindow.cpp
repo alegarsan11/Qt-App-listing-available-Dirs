@@ -1,16 +1,12 @@
 #include "mainwindow.h"
-#include <QApplication>
 #include <QVBoxLayout>
-#include <QWidget>
-#include <QPushButton>
 #include <QDir>
-#include <QListWidget>
 #include <QDebug>
-#include <QProcess>
+#include <QFile>
+#include <QApplication>
 
-char* absDir = "/home/alejandro/";
-char* scriptName = "/run.sh";
-
+QString absDir = "/home/alejandro/"; // base directory
+QString scriptName = "run.sh";   // <-- global script name
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
       button(new QPushButton("&Launch Sim", this))
@@ -21,33 +17,37 @@ MainWindow::MainWindow(QWidget *parent)
     QVBoxLayout *layout = new QVBoxLayout(centralWidget);
 
     listWidget = new QListWidget(this);
+    currentFolderLabel = new QLabel(QString("Current folder: %1").arg(absDir), this);
 
     setWindowTitle("Sim Selector");
     resize(640, 480);
 
-    // Fill the list with folders
     QDir directory(absDir);
     QStringList folders = directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-    for (const QString &folder : folders) {
+    for (const QString &folder : folders)
         listWidget->addItem(folder);
-    }
 
+    layout->addWidget(currentFolderLabel);
     layout->addWidget(listWidget);
     layout->addWidget(button);
 
-    // Persistent process
+    connect(listWidget, &QListWidget::currentItemChanged, this,
+        [=](QListWidgetItem *current, QListWidgetItem *) {
+            if (current)
+                currentFolderLabel->setText(
+                    QString("Current folder: %1""%2").arg(absDir, current->text()));
+            else
+                currentFolderLabel->setText(
+                    QString("Current folder: %1").arg(absDir));
+        }
+    );
+
     process = new QProcess(this);
-
-    // Capture stdout
     connect(process, &QProcess::readyReadStandardOutput, this, [=]() {
-        QByteArray output = process->readAllStandardOutput();
-        qDebug() << "STDOUT:" << output;
+        qDebug() << "STDOUT:" << process->readAllStandardOutput();
     });
-
-    // Capture stderr
     connect(process, &QProcess::readyReadStandardError, this, [=]() {
-        QByteArray error = process->readAllStandardError();
-        qDebug() << "STDERR:" << error;
+        qDebug() << "STDERR:" << process->readAllStandardError();
     });
 
     connect(button, &QPushButton::clicked, this, &MainWindow::handleButton);
@@ -56,14 +56,14 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::handleButton()
 {
     QListWidgetItem *item = listWidget->currentItem();
-    if (!item) {
-        qDebug() << "No folder selected!";
-        return;
-    }
+    QString folderPath;
 
-    QDir baseDir(absDir);
-    QString folderPath = baseDir.filePath(item->text());
-    QString program = folderPath + scriptName; // could be any executable
+    if (item)
+        folderPath = QString("%1/%2").arg(absDir, item->text());
+    else
+        folderPath = absDir;
+
+    QString program = folderPath + "/" + scriptName;  // use the global variable
 
     if (!QFile::exists(program)) {
         qDebug() << "File does not exist:" << program;
@@ -71,14 +71,12 @@ void MainWindow::handleButton()
     }
 
     process->setWorkingDirectory(folderPath);
-    process->start(program); // uses OS to execute file directly
+    process->start(program);
 
-
-    if (!process->waitForStarted(1000)) {
+    if (!process->waitForStarted(1000))
         qDebug() << "Failed to start:" << program;
-    } else {
+    else
         qDebug() << "Started:" << program;
-    }
 }
 
 int main(int argc, char *argv[]) {

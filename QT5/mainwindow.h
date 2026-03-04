@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QListWidget>
+#include <QLabel>
 #include <QProcess>
 
 class MainWindow : public QMainWindow
@@ -19,6 +20,7 @@ private slots:
 private:
     QPushButton *button;
     QListWidget *listWidget;
+    QLabel *currentFolderLabel;   // Shows selected folder or default absDir
     QProcess *process;
 };
 
