@@ -64,12 +64,7 @@ void MainWindow::handleButton()
     }
 
     process->setWorkingDirectory(folderPath);
-
-#ifdef Q_OS_WIN
-    process->start(program);
-#else
     process->start(program); // Linux/macOS
-#endif
 
     if (!process->waitForStarted(1000)) {
         qDebug() << "Failed to start:" << program;
