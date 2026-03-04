@@ -2,25 +2,24 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QCamera>
-#include <QVideoWidget>
-#include <QMediaCaptureSession>
 #include <QPushButton>
-#include <QDir>
 #include <QListWidget>
-#include <QStringList>
+#include <QProcess>
 
-class MainWindow : public QMainWindow {
+class MainWindow : public QMainWindow
+{
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
 
 private slots:
     void handleButton();
 
 private:
     QPushButton *button;
-    QListWidget *listWidget;  
+    QListWidget *listWidget;
+    QProcess *process;
 };
+
 #endif // MAINWINDOW_H
