@@ -1,24 +1,24 @@
-QT       += core gui widgets multimedia multimediawidgets
+QT       += core gui widgets
 
-# Set the target name and specify the application template
-TARGET = Launcher
+CONFIG   += c++17
+
+# Tell qmake where to find headers
+INCLUDEPATH += include
+
+# Sources
+SOURCES += src/mainWindow.cpp
+
+# Headers
+HEADERS += include/mainwindow.h
+
+# Target
+TARGET = SimSelector
 TEMPLATE = app
 
-# Specify the source files
-SOURCES += mainWindow.cpp
-HEADERS += mainwindow.h
+# Optional: put the build files into a separate folder
+DESTDIR = build
 
-# Include OpenCV settings
-CONFIG += c++11
-
-# Set the include path for OpenCV
-INCLUDEPATH += /usr/include/opencv4
-INCLUDEPATH += /usr/include/x86_64-linux-gnu/qt6/QtMultimedia
-
-# Link against OpenCV libraries
-LIBS += -L/usr/local/lib \
-        -lopencv_core \
-        -lopencv_imgcodecs \
-        -lopencv_highgui \
-        -lopencv_imgproc \
-        -lopencv_videoio
+OBJECTS_DIR = build/obj
+MOC_DIR = build/moc
+RCC_DIR = build/rcc
+UI_DIR  = build/ui
