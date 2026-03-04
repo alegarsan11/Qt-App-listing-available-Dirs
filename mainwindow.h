@@ -7,6 +7,7 @@
 #include <QMediaCaptureSession>
 #include <QPushButton>
 #include <QDir>
+#include <QListWidget>
 #include <QStringList>
 
 class MainWindow : public QMainWindow {
@@ -19,8 +20,7 @@ private slots:
     void handleButton();
 
 private:
-    QCamera *camera;
     QPushButton *button;
+    QListWidget *listWidget;  
 };
-
 #endif // MAINWINDOW_H
