@@ -5,7 +5,7 @@
 #include <QFile>
 
 char* absDir = "/home/alejandro/"; // change to your base path
-
+char* scriptName = "/run.sh";
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
       button(new QPushButton("&Launch Sim", this))
@@ -56,7 +56,7 @@ void MainWindow::handleButton()
 
     QDir baseDir(absDir);
     QString folderPath = baseDir.filePath(item->text());
-    QString program = folderPath + "/run.sh"; // could be any executable
+    QString program = folderPath + scriptName; // could be any executable
 
     if (!QFile::exists(program)) {
         qDebug() << "File does not exist:" << program;
