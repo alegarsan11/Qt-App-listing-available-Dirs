@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QListWidget>
 #include <QLabel>
+#include <QTextEdit>
 #include <QProcess>
 
 class MainWindow : public QMainWindow
@@ -21,6 +22,7 @@ private:
     QPushButton *button;
     QListWidget *listWidget;
     QLabel *currentFolderLabel;
+    QTextEdit *outputWidget;
     QProcess *process;
 };
 
