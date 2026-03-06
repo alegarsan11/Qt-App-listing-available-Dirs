@@ -3,8 +3,8 @@
 
 #include <QMainWindow>
 #include <QPushButton>
-#include <QListWidget>
 #include <QLabel>
+#include <QListWidget>
 #include <QTextEdit>
 #include <QProcess>
 
@@ -13,17 +13,31 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    MainWindow(QWidget *parent = nullptr);
 
 private slots:
     void handleButton();
 
 private:
+
+    /* UI */
+
     QPushButton *button;
-    QListWidget *listWidget;
     QLabel *currentFolderLabel;
-    QTextEdit *outputWidget;   // <-- add this
+    QListWidget *listWidget;
+    QListWidget *listPWidget;
+    QTextEdit *outputWidget;
     QProcess *process;
+
+    /* Helper functions */
+
+    QString getSelectedSimFolder();
+    QString getSelectedAuxFile();
+
+    bool moveFileWithoutExtension(QString src, QString dstFolder);
+
+    void populateSimFolders();
+    void populateAuxFolders();
 };
 
-#endif // MAINWINDOW_H
+#endif

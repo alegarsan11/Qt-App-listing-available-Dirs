@@ -3,12 +3,112 @@
 #include <QDir>
 #include <QDebug>
 #include <QFile>
+#include <QFileInfo>
 #include <QListWidgetItem>
 #include <QTextEdit>
 
-// Global base directory and script name
+/* Base directories */
+
 QString absDir = "/home/alejandro/";
+QString auxDir = "/home/alejandro/Imágenes/";
 QString scriptName = "run.sh";
+
+
+/* ------------------------------------------------ */
+/*                Helper Functions                  */
+/* ------------------------------------------------ */
+
+QString MainWindow::getSelectedSimFolder()
+{
+    QListWidgetItem *item = listWidget->currentItem();
+
+    if (!item)
+        return "";
+
+    return absDir + "/" + item->text();
+}
+
+
+/* find .le file inside selected aux folder */
+
+QString MainWindow::getSelectedAuxFile()
+{
+    QListWidgetItem *item = listPWidget->currentItem();
+
+    if (!item)
+        return "";
+
+    QString folderPath = auxDir + "/" + item->text();
+
+    QDir dir(folderPath);
+
+    QStringList files = dir.entryList(QStringList() << "*.le", QDir::Files);
+
+    if (files.isEmpty())
+        return "";
+
+    return folderPath + "/" + files.first();
+}
+
+
+/* copy file removing only .le */
+
+bool MainWindow::moveFileWithoutExtension(QString src, QString dstFolder)
+{
+    QFileInfo info(src);
+
+    /* remove only last extension (.le) */
+    QString newName = info.completeBaseName();
+
+    QString dst = dstFolder + "/" + newName;
+
+    if (!QFile::exists(src))
+        return false;
+
+    QFile::remove(dst);   // overwrite
+    return QFile::copy(src, dst);
+}
+
+
+/* fill simulation folder list */
+
+void MainWindow::populateSimFolders()
+{
+    QDir directory(absDir);
+
+    QStringList folders =
+        directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+
+    for (const QString &folder : folders)
+        listWidget->addItem(folder);
+}
+
+
+/* fill aux folders list */
+
+void MainWindow::populateAuxFolders()
+{
+    QDir directory(auxDir);
+
+    QStringList folders =
+        directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+
+    for (const QString &folder : folders)
+    {
+        QDir sub(auxDir + "/" + folder);
+
+        QStringList files =
+            sub.entryList(QStringList() << "*.le", QDir::Files);
+
+        if (!files.isEmpty())
+            listPWidget->addItem(folder);
+    }
+}
+
+
+/* ------------------------------------------------ */
+/*                   Constructor                    */
+/* ------------------------------------------------ */
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
@@ -19,85 +119,151 @@ MainWindow::MainWindow(QWidget *parent)
 
     QVBoxLayout *layout = new QVBoxLayout(centralWidget);
 
-    // Label on top
-    currentFolderLabel = new QLabel(QString("Current folder: %1").arg(absDir), this);
+    /* label */
+
+    currentFolderLabel =
+        new QLabel(QString("Current folder: %1").arg(absDir), this);
+
     layout->addWidget(currentFolderLabel);
 
-    // Folder list
+
+    /* simulation list */
+
     listWidget = new QListWidget(this);
     layout->addWidget(listWidget);
 
-    // Output widget (hidden by default)
+
+    /* aux list */
+
+    listPWidget = new QListWidget(this);
+    layout->addWidget(listPWidget);
+
+
+    /* output terminal */
+
     outputWidget = new QTextEdit(this);
     outputWidget->setReadOnly(true);
-    outputWidget->hide(); // only show when running a script
+    outputWidget->hide();
+
     layout->addWidget(outputWidget);
 
-    // Launch button
+
+    /* button */
+
     layout->addWidget(button);
+
 
     setWindowTitle("Sim Selector");
     resize(640, 480);
 
-    // Fill list with directories
-    QDir directory(absDir);
-    QStringList folders = directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-    for (const QString &folder : folders)
-        listWidget->addItem(folder);
 
-    // Update label on selection change
+    /* fill lists */
+
+    populateSimFolders();
+    populateAuxFolders();
+
+
+    /* update label */
+
     connect(listWidget, &QListWidget::currentItemChanged, this,
         [=](QListWidgetItem *current, QListWidgetItem *) {
+
             if (current)
-                currentFolderLabel->setText(QString("Current folder: %1/%2").arg(absDir, current->text()));
+                currentFolderLabel->setText(
+                    QString("Current folder: %1/%2")
+                        .arg(absDir, current->text()));
             else
-                currentFolderLabel->setText(QString("Current folder: %1").arg(absDir));
-        }
-    );
-
-    // Persistent process
-    process = new QProcess(this);
-
-    // Capture stdout/stderr into the output widget
-    connect(process, &QProcess::readyReadStandardOutput, this, [=]() {
-        outputWidget->append(QString::fromUtf8(process->readAllStandardOutput()));
-    });
-    connect(process, &QProcess::readyReadStandardError, this, [=]() {
-        outputWidget->append(QString::fromUtf8(process->readAllStandardError()));
-    });
-
-    // When process finishes, optionally hide the output widget
-    connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-        this, [=](int exitCode, QProcess::ExitStatus status){
-            outputWidget->append(QString("\nProcess finished with code %1").arg(exitCode));
-            // outputWidget->hide(); // remove hide if you want it to stay
+                currentFolderLabel->setText(
+                    QString("Current folder: %1").arg(absDir));
         });
 
-    // Button click
-    connect(button, &QPushButton::clicked, this, &MainWindow::handleButton);
+
+    /* process */
+
+    process = new QProcess(this);
+
+
+    connect(process, &QProcess::readyReadStandardOutput, this, [=]() {
+        outputWidget->append(
+            QString::fromUtf8(process->readAllStandardOutput()));
+    });
+
+
+    connect(process, &QProcess::readyReadStandardError, this, [=]() {
+        outputWidget->append(
+            QString::fromUtf8(process->readAllStandardError()));
+    });
+
+
+    connect(process,
+            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this,
+            [=](int exitCode, QProcess::ExitStatus) {
+
+        outputWidget->append(
+            QString("\nProcess finished with code %1").arg(exitCode));
+    });
+
+
+    connect(button, &QPushButton::clicked,
+            this, &MainWindow::handleButton);
 }
+
+
+/* ------------------------------------------------ */
+/*                 Button Logic                     */
+/* ------------------------------------------------ */
 
 void MainWindow::handleButton()
 {
-    QListWidgetItem *item = listWidget->currentItem();
-    QString folderPath = item ? QString("%1/%2").arg(absDir, item->text()) : absDir;
-    QString program = folderPath + "/" + scriptName;
+    QString simFolder = getSelectedSimFolder();
+    QString auxFile = getSelectedAuxFile();
 
-    if (!QFile::exists(program)) {
-        outputWidget->show();
-        outputWidget->append("File does not exist: " + program);
-        return;
-    }
+    QString script = simFolder + "/" + scriptName;
 
-    // Clear previous output and show widget
     outputWidget->clear();
     outputWidget->show();
 
-    process->setWorkingDirectory(folderPath);
-    process->start(program);
+
+    if (simFolder.isEmpty())
+    {
+        outputWidget->append("No simulation folder selected.");
+        return;
+    }
+
+
+    if (auxFile.isEmpty())
+    {
+        outputWidget->append("No .le file found in selected aux folder.");
+        return;
+    }
+
+
+    if (!moveFileWithoutExtension(auxFile, simFolder))
+    {
+        outputWidget->append("Failed copying file.");
+        return;
+    }
+
+    outputWidget->append("File copied successfully.");
+
+
+    if (!QFile::exists(script))
+    {
+        outputWidget->append("run.sh not found.");
+        return;
+    }
+
+
+    process->setWorkingDirectory(simFolder);
+
+    /* Qt5 start */
+
+    process->start(script);
+
 
     if (!process->waitForStarted(1000))
-        outputWidget->append("Failed to start: " + program);
+        outputWidget->append("Failed to start: " + script);
     else
-        outputWidget->append("Started: " + program);
+        outputWidget->append("Started: " + script);
 }
